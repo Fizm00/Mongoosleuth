@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" width="1200" height="300">
+  <defs>
+    <!-- Background Gradient (Elegant Dark Night Sky) -->
+    <linearGradient id="bg-gradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#051417" />
+      <stop offset="60%" stop-color="#02090a" />
+      <stop offset="100%" stop-color="#010405" />
+    </linearGradient>
+
+    <!-- Shooting Star Tail Gradient (Warm Silver/White to transparent) -->
+    <linearGradient id="meteor-gradient" x1="1" y1="1" x2="0" y2="0">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9" />
+      <stop offset="25%" stop-color="#e2e8f0" stop-opacity="0.35" />
+      <stop offset="100%" stop-color="#94a3b8" stop-opacity="0" />
+    </linearGradient>
+
+    <!-- Subtle Glow Filter for small stars only -->
+    <filter id="star-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1.5" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="300" fill="url(#bg-gradient)" />
+
+  <!-- Animated Shooting Stars (Thin, Elegant, and Fading In/Out) -->
+  <g>
+    <!-- Shooting Star 1 -->
+    <line x1="0" y1="0" x2="-100" y2="-100" stroke="url(#meteor-gradient)" stroke-width="1.2" stroke-linecap="round" opacity="0">
+      <animateMotion
+        path="M 150,-50 L 1100,425"
+        dur="5s"
+        repeatCount="indefinite"
+        begin="0s"
+      />
+      <animate
+        attributeName="opacity"
+        values="0;0;1;1;0;0"
+        keyTimes="0;0.1;0.25;0.5;0.7;1"
+        dur="5s"
+        repeatCount="indefinite"
+        begin="0s"
+      />
+    </line>
+
+    <!-- Shooting Star 2 -->
+    <line x1="0" y1="0" x2="-80" y2="-80" stroke="url(#meteor-gradient)" stroke-width="0.8" stroke-linecap="round" opacity="0">
+      <animateMotion
+        path="M 500,-50 L 1350,375"
+        dur="7s"
+        repeatCount="indefinite"
+        begin="2s"
+      />
+      <animate
+        attributeName="opacity"
+        values="0;0;1;1;0;0"
+        keyTimes="0;0.15;0.3;0.55;0.75;1"
+        dur="7s"
+        repeatCount="indefinite"
+        begin="2s"
+      />
+    </line>
+
+    <!-- Shooting Star 3 -->
+    <line x1="0" y1="0" x2="-120" y2="-120" stroke="url(#meteor-gradient)" stroke-width="1" stroke-linecap="round" opacity="0">
+      <animateMotion
+        path="M -50,50 L 750,450"
+        dur="6.2s"
+        repeatCount="indefinite"
+        begin="1s"
+      />
+      <animate
+        attributeName="opacity"
+        values="0;0;1;1;0;0"
+        keyTimes="0;0.08;0.22;0.48;0.68;1"
+        dur="6.2s"
+        repeatCount="indefinite"
+        begin="1s"
+      />
+    </line>
+  </g>
+
+  <!-- Background Sparkles (Pulsating Stars) -->
+  <g filter="url(#star-glow)">
+    <circle cx="100" cy="70" r="1.2" fill="#38bdf8">
+      <animate attributeName="opacity" values="0.1;0.9;0.1" dur="3s" repeatCount="indefinite" begin="0s" />
+    </circle>
+    <circle cx="280" cy="220" r="1.8" fill="#ffffff">
+      <animate attributeName="opacity" values="0.2;1;0.2" dur="3.8s" repeatCount="indefinite" begin="0.8s" />
+    </circle>
+    <circle cx="450" cy="50" r="1" fill="#ffffff">
+      <animate attributeName="opacity" values="0.1;0.8;0.1" dur="2.2s" repeatCount="indefinite" begin="1.5s" />
+    </circle>
+    <circle cx="720" cy="240" r="1.5" fill="#38bdf8">
+      <animate attributeName="opacity" values="0.2;0.9;0.2" dur="4.5s" repeatCount="indefinite" begin="0.3s" />
+    </circle>
+    <circle cx="890" cy="80" r="1.2" fill="#ffffff">
+      <animate attributeName="opacity" values="0.1;0.8;0.1" dur="3.2s" repeatCount="indefinite" begin="2.1s" />
+    </circle>
+    <circle cx="1080" cy="190" r="2" fill="#ffffff">
+      <animate attributeName="opacity" values="0.3;1;0.3" dur="4.2s" repeatCount="indefinite" begin="1.2s" />
+    </circle>
+  </g>
+
+  <!-- 4-pointed Sparkling Stars (Rotating & Scaling Sprinkles) -->
+  <g filter="url(#star-glow)">
+    <!-- Star 1 (Left Area) -->
+    <g transform="translate(200, 110)">
+      <path d="M 0,-6 L 1.5,-1.5 L 6,0 L 1.5,1.5 L 0,6 L -1.5,1.5 L -6,0 L -1.5,-1.5 Z" fill="#7dd3fc">
+        <animateTransform attributeName="transform" type="scale" values="0.4;1.1;0.4" dur="4s" repeatCount="indefinite" begin="0s" additive="sum"/>
+        <animateTransform attributeName="transform" type="rotate" values="0;90;180" dur="8s" repeatCount="indefinite" begin="0s" additive="sum"/>
+      </path>
+    </g>
+
+    <!-- Star 2 (Right Area) -->
+    <g transform="translate(1000, 80)">
+      <path d="M 0,-8 L 2,-2 L 8,0 L 2,2 L 0,8 L -2,2 L -8,0 L -2,-2 Z" fill="#ffffff">
+        <animateTransform attributeName="transform" type="scale" values="0.3;1;0.3" dur="5s" repeatCount="indefinite" begin="1.8s" additive="sum"/>
+        <animateTransform attributeName="transform" type="rotate" values="0;-90;-180" dur="10s" repeatCount="indefinite" begin="1.8s" additive="sum"/>
+      </path>
+    </g>
+
+    <!-- Star 3 (Bottom Center-Left) -->
+    <g transform="translate(420, 230)">
+      <path d="M 0,-5 L 1.2,-1.2 L 5,0 L 1.2,1.2 L 0,5 L -1.2,1.2 L -5,0 L -1.2,-1.2 Z" fill="#e2e8f0">
+        <animateTransform attributeName="transform" type="scale" values="0.5;1.2;0.5" dur="3.2s" repeatCount="indefinite" begin="0.5s" additive="sum"/>
+        <animateTransform attributeName="transform" type="rotate" values="0;180" dur="6.4s" repeatCount="indefinite" begin="0.5s" additive="sum"/>
+      </path>
+    </g>
+  </g>
+
+  <!-- Typography Content (Clean, Flat, Non-Neon) -->
+  <g transform="translate(600, 140)">
+    <!-- Flat Pure White Title -->
+    <text x="0" y="0" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="56" font-weight="800" fill="#ffffff" letter-spacing="4">
+      MONGOOSLEUTH
+    </text>
+
+    <!-- Soft Slate-Blue Subtitle -->
+    <text x="0" y="45" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="16" font-weight="500" fill="#94a3b8" letter-spacing="1.5">
+      Stop N+1 queries before they slow you down
+    </text>
+  </g>
+</svg>

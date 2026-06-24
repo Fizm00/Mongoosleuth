@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 80" width="1200" height="80">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bg-gradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#02090a" />
+      <stop offset="100%" stop-color="#010405" />
+    </linearGradient>
+
+    <!-- Shooting Star Tail Gradient -->
+    <linearGradient id="meteor-gradient" x1="1" y1="1" x2="0" y2="0">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#94a3b8" stop-opacity="0" />
+    </linearGradient>
+
+    <!-- Subtle Glow Filter for stars -->
+    <filter id="star-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1.5" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="80" fill="url(#bg-gradient)" />
+
+  <!-- Animated Shooting Stars (Falling Stars) -->
+  <g>
+    <!-- Shooting Star -->
+    <line x1="0" y1="0" x2="-80" y2="-80" stroke="url(#meteor-gradient)" stroke-width="0.8" stroke-linecap="round" opacity="0">
+      <animateMotion
+        path="M 700,-50 L 1300,100"
+        dur="6s"
+        repeatCount="indefinite"
+        begin="0.5s"
+      />
+      <animate
+        attributeName="opacity"
+        values="0;0;1;1;0;0"
+        keyTimes="0;0.1;0.25;0.55;0.75;1"
+        dur="6s"
+        repeatCount="indefinite"
+        begin="0.5s"
+      />
+    </line>
+  </g>
+
+  <!-- Background Sparkles (Pulsating Stars) -->
+  <g filter="url(#star-glow)">
+    <circle cx="150" cy="40" r="1.2" fill="#38bdf8">
+      <animate attributeName="opacity" values="0.1;1;0.1" dur="3s" repeatCount="indefinite" begin="0s" />
+    </circle>
+    <circle cx="480" cy="55" r="1.5" fill="#ffffff">
+      <animate attributeName="opacity" values="0.2;1;0.2" dur="3.5s" repeatCount="indefinite" begin="1.2s" />
+    </circle>
+    <circle cx="920" cy="30" r="1.2" fill="#ffffff">
+      <animate attributeName="opacity" values="0.1;0.9;0.1" dur="2.5s" repeatCount="indefinite" begin="0.5s" />
+    </circle>
+  </g>
+
+  <!-- 4-pointed Sparkling Stars (Rotating & Scaling Sprinkles) -->
+  <g filter="url(#star-glow)">
+    <!-- Star 1 -->
+    <g transform="translate(300, 35)">
+      <path d="M 0,-5 L 1.2,-1.2 L 5,0 L 1.2,1.2 L 0,5 L -1.2,1.2 L -5,0 L -1.2,-1.2 Z" fill="#7dd3fc">
+        <animateTransform attributeName="transform" type="scale" values="0.4;1.2;0.4" dur="3s" repeatCount="indefinite" begin="0s" additive="sum"/>
+        <animateTransform attributeName="transform" type="rotate" values="0;90;180" dur="6s" repeatCount="indefinite" begin="0s" additive="sum"/>
+      </path>
+    </g>
+
+    <!-- Star 2 -->
+    <g transform="translate(850, 45)">
+      <path d="M 0,-5 L 1.2,-1.2 L 5,0 L 1.2,1.2 L 0,5 L -1.2,1.2 L -5,0 L -1.2,-1.2 Z" fill="#ffffff">
+        <animateTransform attributeName="transform" type="scale" values="0.3;1.1;0.3" dur="4s" repeatCount="indefinite" begin="1.5s" additive="sum"/>
+        <animateTransform attributeName="transform" type="rotate" values="0;-180" dur="8s" repeatCount="indefinite" begin="1.5s" additive="sum"/>
+      </path>
+    </g>
+  </g>
+</svg>
