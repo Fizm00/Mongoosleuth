@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./assets/banner.svg" width="100%" alt="Mongoosleuth Banner"/>
+<img src="assets/banner.svg" width="100%" alt="Mongoosleuth Banner"/>
 
 <a href="https://git.io/typing-svg">
   <img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&size=18&pause=1500&color=0F766E&center=true&vCenter=true&width=600&lines=Zero%20runtime%20dependencies.%20Just%20a%20peerDependency.;Catches%20the%20N%2B1%20queries%20Bullet%20catches%20in%20Rails.;Built%20for%20Mongoose.%20Built%20for%20TypeScript." alt="Typing SVG"/>
@@ -206,5 +206,5 @@ Same fingerprint either way — which is exactly the point.
 MIT
 
 <div align="center">
-<img src="./assets/footer.svg" width="100%" alt="Mongoosleuth Footer"/>
+<img src="assets/footer.svg" width="100%" alt="Mongoosleuth Footer"/>
 </div>
