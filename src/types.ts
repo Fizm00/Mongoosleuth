@@ -76,28 +76,4 @@ export interface Reporter {
   report(findings: Finding[]): void;
 }
 
-/**
- * Internal record of an executed query inside the request scope.
- */
-export interface QueryRecord {
-  /**
-   * The name of the Mongoose model being queried.
-   */
-  model: string;
-
-  /**
-   * The Mongoose query operation (e.g., 'find', 'findOne').
-   */
-  operation: string;
-
-  /**
-   * The raw filter object before normalization (not logged directly, but used for fingerprint generation).
-   */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  filter: any;
-
-  /**
-   * The call site of the query, if captured.
-   */
-  callSite: string;
-}
+export { QueryRecord } from './scope';

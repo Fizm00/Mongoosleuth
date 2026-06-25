@@ -1,35 +1,73 @@
-import { AsyncLocalStorage } from 'async_hooks';
-import { QueryRecord } from './types';
+import { AsyncLocalStorage } from 'node:async_hooks';
 
 /**
- * Manages request-scoped storage using AsyncLocalStorage.
- * Stores query execution records mapped by their fingerprint/key.
+ * Represents a recorded query within a tracking scope.
  */
-export class RequestScope {
-  private static storage = new AsyncLocalStorage<Map<string, QueryRecord[]>>();
+export interface QueryRecord {
+  model: string;
+  operation: string;
+  fingerprint: string;
+  callSite: string;
+  count: number;
+}
 
-  /**
-   * Starts a new request scope and executes the provided function within it.
-   */
-  public static run<T>(store: Map<string, QueryRecord[]>, fn: () => T): T {
-    // TODO: Wrap fn inside storage.run() as described in AGENTS.md
-    void store;
-    return fn();
+// Thread-safe request/execution context isolation for queries
+const storage = new AsyncLocalStorage<Map<string, QueryRecord>>();
+
+/**
+ * Opens a new query tracking scope for the duration of the asynchronous function `fn`.
+ *
+ * @param fn The asynchronous function to execute within the scope.
+ * @returns The resolved/rejected promise value of `fn`.
+ */
+export function runInScope<T>(fn: () => Promise<T>): Promise<T> {
+  const scopeMap = new Map<string, QueryRecord>();
+  return storage.run(scopeMap, fn);
+}
+
+/**
+ * Records an intercepted query into the active scope, if one is active.
+ * If called outside of an active scope, it silently does nothing.
+ *
+ * @param entry The query details to record.
+ */
+export function recordQuery(entry: {
+  model: string;
+  operation: string;
+  fingerprint: string;
+  callSite: string;
+}): void {
+  const store = storage.getStore();
+  if (!store) {
+    return;
   }
 
-  /**
-   * Gets the active query store for the current request context.
-   */
-  public static getStore(): Map<string, QueryRecord[]> | undefined {
-    // TODO: Retrieve store from storage.getStore() as described in AGENTS.md
-    return this.storage.getStore();
-  }
+  const key = `${entry.fingerprint}::${entry.callSite}`;
+  const existing = store.get(key);
 
-  /**
-   * Adds a query record to the active scope if it exists.
-   */
-  public static record(record: QueryRecord): void {
-    // TODO: Add the record to the active Map as described in AGENTS.md
-    void record;
+  if (existing) {
+    existing.count++;
+  } else {
+    store.set(key, {
+      model: entry.model,
+      operation: entry.operation,
+      fingerprint: entry.fingerprint,
+      callSite: entry.callSite,
+      count: 1,
+    });
   }
+}
+
+/**
+ * Returns all recorded queries inside the currently active scope as an array.
+ * Returns `undefined` if called outside any active scope.
+ *
+ * @returns Array of QueryRecord objects or undefined.
+ */
+export function getActiveRecords(): QueryRecord[] | undefined {
+  const store = storage.getStore();
+  if (!store) {
+    return undefined;
+  }
+  return Array.from(store.values());
 }
