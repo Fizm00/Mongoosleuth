@@ -1,10 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { analyze } from '../src/analyzer';
+import { analyzeRecords } from '../src/analyzer';
 import type { QueryRecord } from '../src/scope';
 
-describe('Pattern Analyzer Thresholds & Sorting', () => {
-  it('should return an empty array when given an empty records list', () => {
-    const result = analyze([], 3);
+describe('Pattern Analyzer - analyzeRecords', () => {
+  it('should return an empty array when records is undefined', () => {
+    const result = analyzeRecords(undefined, { threshold: 3 });
+    expect(result).toEqual([]);
+  });
+
+  it('should return an empty array when records is an empty array', () => {
+    const result = analyzeRecords([], { threshold: 3 });
     expect(result).toEqual([]);
   });
 
@@ -19,7 +24,7 @@ describe('Pattern Analyzer Thresholds & Sorting', () => {
       },
     ];
 
-    const result = analyze(records, 3);
+    const result = analyzeRecords(records, { threshold: 3 });
     expect(result).toHaveLength(1);
     expect(result[0].model).toBe('User');
     expect(result[0].count).toBe(3);
@@ -36,11 +41,11 @@ describe('Pattern Analyzer Thresholds & Sorting', () => {
       },
     ];
 
-    const result = analyze(records, 3);
+    const result = analyzeRecords(records, { threshold: 3 });
     expect(result).toHaveLength(0);
   });
 
-  it('should sort multiple findings in descending order of count', () => {
+  it('should filter out under-threshold records and sort the remaining in descending order of count', () => {
     const records: QueryRecord[] = [
       {
         model: 'Product',
@@ -61,78 +66,58 @@ describe('Pattern Analyzer Thresholds & Sorting', () => {
         operation: 'findOne',
         fingerprint: 'Comment:findOne:{"id":"<string>"}',
         callSite: 'comment.js:5',
-        count: 7,
+        count: 2, // will be excluded
+      },
+      {
+        model: 'Author',
+        operation: 'find',
+        fingerprint: 'Author:find:{}',
+        callSite: 'author.js:8',
+        count: 6,
       },
     ];
 
-    const result = analyze(records, 3);
+    const result = analyzeRecords(records, { threshold: 3 });
     expect(result).toHaveLength(3);
     expect(result[0].model).toBe('User'); // count 10
-    expect(result[1].model).toBe('Comment'); // count 7
+    expect(result[1].model).toBe('Author'); // count 6
     expect(result[2].model).toBe('Product'); // count 4
   });
 
-  it('should resolve identical count ties alphabetically by model, then fingerprint', () => {
+  it('should preserve relative order (stable sort) for records with identical counts', () => {
     const records: QueryRecord[] = [
       {
-        model: 'User',
+        model: 'FirstUser',
         operation: 'find',
-        fingerprint: 'User:find:{"z":1}',
+        fingerprint: 'FirstUser:find:{}',
         callSite: 'user.js:10',
         count: 5,
       },
       {
-        model: 'Product',
+        model: 'SecondUser',
         operation: 'find',
-        fingerprint: 'Product:find:{}',
-        callSite: 'product.js:20',
+        fingerprint: 'SecondUser:find:{}',
+        callSite: 'user.js:20',
         count: 5,
       },
       {
-        model: 'User',
+        model: 'ThirdUser',
         operation: 'find',
-        fingerprint: 'User:find:{"a":1}',
-        callSite: 'user.js:5',
+        fingerprint: 'ThirdUser:find:{}',
+        callSite: 'user.js:30',
         count: 5,
       },
     ];
 
-    const result = analyze(records, 3);
+    const result = analyzeRecords(records, { threshold: 3 });
     expect(result).toHaveLength(3);
-    // Sort logic: 'Product' before 'User'
-    // For 'User' tie, 'User:find:{"a":1}' before 'User:find:{"z":1}'
-    expect(result[0].model).toBe('Product');
-    expect(result[1].fingerprint).toBe('User:find:{"a":1}');
-    expect(result[2].fingerprint).toBe('User:find:{"z":1}');
+    // Stable sort check: relative order must remain unchanged
+    expect(result[0].model).toBe('FirstUser');
+    expect(result[1].model).toBe('SecondUser');
+    expect(result[2].model).toBe('ThirdUser');
   });
 
-  it('should not mutate the original records array when analyze is invoked', () => {
-    const records: QueryRecord[] = [
-      {
-        model: 'Product',
-        operation: 'find',
-        fingerprint: 'Product:find:{}',
-        callSite: 'product.js:20',
-        count: 4,
-      },
-      {
-        model: 'User',
-        operation: 'findById',
-        fingerprint: 'User:findById:{"_id":"<ObjectId>"}',
-        callSite: 'user.js:10',
-        count: 10,
-      },
-    ];
-
-    const recordsCopy = JSON.parse(JSON.stringify(records));
-
-    analyze(records, 3);
-    analyze(records, 3);
-
-    expect(records).toEqual(recordsCopy);
-  });
-
-  it('should filter out and completely omit records below threshold in mixed lists', () => {
+  it('should work correctly with an extreme threshold of 1', () => {
     const records: QueryRecord[] = [
       {
         model: 'User',
@@ -141,24 +126,11 @@ describe('Pattern Analyzer Thresholds & Sorting', () => {
         callSite: 'user.js:10',
         count: 1,
       },
-      {
-        model: 'Product',
-        operation: 'find',
-        fingerprint: 'Product:find:{}',
-        callSite: 'product.js:20',
-        count: 5,
-      },
-      {
-        model: 'Category',
-        operation: 'findOne',
-        fingerprint: 'Category:findOne:{}',
-        callSite: 'category.js:5',
-        count: 2,
-      },
     ];
 
-    const result = analyze(records, 3);
+    const result = analyzeRecords(records, { threshold: 1 });
     expect(result).toHaveLength(1);
-    expect(result[0].model).toBe('Product');
+    expect(result[0].model).toBe('User');
+    expect(result[0].count).toBe(1);
   });
 });

@@ -2,24 +2,27 @@ import type { QueryRecord } from './scope';
 import type { Finding } from './types';
 
 /**
- * Analyzes recorded queries and groups them by fingerprint and call site.
- * Emits a Finding for each group where the execution count meets or exceeds the threshold.
+ * Analyzes recorded queries and maps them to public N+1 query findings.
+ * Filters out query records whose count is below the specified threshold.
  *
- * This function must remain pure (no I/O, no Mongoose imports).
+ * This function is pure and side-effect free.
  * See AGENTS.md: PatternAnalyzer.
  *
- * @param records Flat list of recorded queries executed during the request.
- * @param threshold The occurrence threshold to trigger a Finding.
- * @returns Array of identified N+1 query findings.
+ * @param records List of recorded queries from the active scope, or undefined if outside scope.
+ * @param options Analyzer options (containing threshold).
+ * @returns Array of N+1 query findings.
  */
-export function analyze(records: QueryRecord[], threshold: number): Finding[] {
-  if (!records || records.length === 0) {
+export function analyzeRecords(
+  records: QueryRecord[] | undefined,
+  options: { threshold: number }
+): Finding[] {
+  if (!records) {
     return [];
   }
 
-  // Filter out queries below threshold, map to public Finding contract
+  // Filter records with count >= threshold and map to Finding structure
   const findings: Finding[] = records
-    .filter((r) => r.count >= threshold)
+    .filter((r) => r.count >= options.threshold)
     .map((r) => ({
       model: r.model,
       operation: r.operation,
@@ -28,22 +31,8 @@ export function analyze(records: QueryRecord[], threshold: number): Finding[] {
       callSite: r.callSite,
     }));
 
-  // Deterministically sort findings:
-  // 1. Descending by query count (highest count first).
-  // 2. Alphabetically ascending by model name (tie-break).
-  // 3. Alphabetically ascending by query fingerprint (secondary tie-break).
-  findings.sort((a, b) => {
-    if (b.count !== a.count) {
-      return b.count - a.count;
-    }
-
-    const modelCompare = a.model.localeCompare(b.model);
-    if (modelCompare !== 0) {
-      return modelCompare;
-    }
-
-    return a.fingerprint.localeCompare(b.fingerprint);
-  });
+  // Sort descending by count only (stable sort by default)
+  findings.sort((a, b) => b.count - a.count);
 
   return findings;
 }
