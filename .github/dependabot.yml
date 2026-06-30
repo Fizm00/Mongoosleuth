@@ -1,0 +1,27 @@
+version: 2
+updates:
+  # devDependencies (typescript, tsup, vitest, mongodb-memory-server, etc).
+  # Grouped into a single weekly PR instead of one PR per package, since a
+  # one-person/small-team project doesn't need to triage 8 separate update
+  # PRs every week.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      dev-dependencies:
+        patterns:
+          - '*'
+    # mongoose itself should NEVER be auto-bumped here even though it's
+    # only a devDependency in this repo for testing — version support is a
+    # deliberate decision, driven by the CI matrix in ci.yml, not something
+    # Dependabot should silently widen.
+    ignore:
+      - dependency-name: mongoose
+
+  # Keep the actions/* versions used in the workflows above current too —
+  # these are easy to forget since they don't show up in npm audit.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

@@ -1,0 +1,56 @@
+name: Publish
+
+# Trigger only on a GitHub Release being published, not on every tag push.
+# This means publishing is a deliberate, reviewable action (write release
+# notes, then publish) rather than something that fires the instant you
+# push a tag.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  # Required for npm provenance: lets npm cryptographically attest that
+  # this package version was built from this exact commit/workflow, which
+  # shows a "Built and signed on GitHub Actions" badge on the npm page.
+  id-token: write
+
+jobs:
+  publish:
+    name: Build, test, and publish to npm
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - run: npm ci
+
+      # Re-run the full gate here too. Never trust that CI on main already
+      # passed for this exact commit — re-verify right before anything
+      # gets published, since this is the one step that can't be undone.
+      - run: npm run lint
+      - run: npm run build
+      - run: npm test
+
+      # The version in package.json must match the Git tag the Release was
+      # created from (e.g. tag v1.2.0 -> package.json version 1.2.0). This
+      # catches the single most common publish mistake: forgetting to bump
+      # the version before tagging.
+      - name: Verify package.json version matches release tag
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "Tag is v$TAG_VERSION but package.json says $PKG_VERSION"
+            exit 1
+          fi
+
+      - name: Publish to npm
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -1,0 +1,115 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel any in-progress run on the same branch/PR when new commits arrive,
+# so we don't burn CI minutes testing commits that are already stale.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+      - run: npm run lint
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+
+      # Fail fast if the build silently stopped producing one of the
+      # required dual-module outputs (ESM, CJS, type declarations).
+      - name: Verify dual module output exists
+        run: |
+          test -f dist/index.mjs
+          test -f dist/index.js
+          test -f dist/index.d.ts
+          test -f dist/index.d.mts
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          retention-days: 7
+
+  test:
+    name: Test (Node ${{ matrix.node-version }}, Mongoose ${{ matrix.mongoose-version }})
+    runs-on: ubuntu-latest
+    needs: lint
+    strategy:
+      # Don't cancel every other matrix combination just because one
+      # particular Node/Mongoose pairing fails — we want to see the full
+      # compatibility picture in one run.
+      fail-fast: false
+      matrix:
+        node-version: [18, 20, 22]
+        mongoose-version: ['7', '8']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - run: npm ci
+
+      # Pin the peer dependency to whichever Mongoose major version this
+      # matrix cell is testing against, overriding whatever is in
+      # package-lock.json. This is what actually catches breaking changes
+      # in Mongoose internals (e.g. this.op, exec()) before users hit them.
+      - name: Install Mongoose ${{ matrix.mongoose-version }}
+        run: npm install --no-save mongoose@${{ matrix.mongoose-version }}
+
+      - run: npm test
+        env:
+          # mongodb-memory-server downloads a MongoDB binary on first run;
+          # caching it across matrix cells keeps CI fast and avoids
+          # hammering the download mirror.
+          MONGOMS_DOWNLOAD_DIR: ${{ github.workspace }}/.cache/mongodb-binaries
+
+      - name: Cache MongoDB binary
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.cache/mongodb-binaries
+          key: mongodb-binaries-${{ runner.os }}
+
+  # Single required status check to point branch protection rules at,
+  # instead of having to list every matrix cell individually.
+  ci-success:
+    name: CI success
+    runs-on: ubuntu-latest
+    needs: [lint, build, test]
+    if: always()
+    steps:
+      - name: Fail if any dependent job failed
+        run: |
+          if [ "${{ contains(needs.*.result, 'failure') }}" = "true" ]; then
+            echo "One or more required jobs failed."
+            exit 1
+          fi
