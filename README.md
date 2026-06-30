@@ -269,14 +269,14 @@ Same fingerprint either way — which is exactly the point.
 
 ## FAQ
 
-#### Apakah aman dipasang di production?
-Ya, sangat aman. Saat `enabled` diatur ke `false` (default di lingkungan produksi), seluruh arsitektur hook Mongoosleuth di-bypass secara otomatis dan hanya berjalan sebagai fungsi kosong (*no-op pass-through*) dengan biaya komputasi yang tidak terasa (negligible overhead). Selain itu, Mongoosleuth tidak pernah menyimpan data sensitif (PII) dari kueri, sehingga aman terhadap privasi data.
+#### Is it safe to run in production?
+Yes, absolutely. When `enabled` is set to `false` (which is the default outside development/staging environments), all of Mongoosleuth's internal hooks are bypassed and act as zero-overhead no-op pass-throughs. Additionally, Mongoosleuth never captures or logs raw query values (PII data is fully protected by substituting types), ensuring complete data privacy.
 
-#### Apakah ini memengaruhi performa aplikasi saya?
-Di lingkungan pengembangan (`enabled: true`), proses penangkapan *stack trace* untuk melacak baris kode (`callSite`) memiliki sedikit biaya CPU. Jika Anda ingin melakukan pengujian performa tinggi (load testing) namun tetap ingin mencatat kueri N+1, Anda bisa mengatur `captureStackTrace: false` untuk menonaktifkan pelacakan baris kode dan mengelompokkan panggilan di bawah lokasi `'unknown'`.
+#### Will this affect my application's performance?
+In development (`enabled: true`), capturing stack traces to locate the exact query line (`callSite`) has a minor CPU cost. If you wish to run high-throughput load tests or minimize trace collection overhead, you can set `captureStackTrace: false` to disable call-site tracing and group queries under a single `'unknown'` location.
 
-#### Mengapa tidak menggunakan logging kueri database bawaan saja?
-Logging bawaan database (seperti database profiler) hanya mencatat daftar kueri mentah yang masuk tanpa menyadari relasi antar-kueri tersebut. Mongoosleuth mengelompokkan kueri berdasarkan baris kode asal pemanggilnya di dalam request yang sama. Ini membuat Mongoosleuth dapat membedakan kueri repetitif akibat loop terpisah dengan kueri yang memang sengaja dieksekusi secara terpisah di baris kode berbeda.
+#### Why not just use built-in database query logging?
+Database profilers and query loggers record individual raw queries independently without context of where they originated. Mongoosleuth isolates query shapes per request scope and groups them by their exact code line location. This allows it to distinguish between normal independent query executions and repeated, identical queries fired from a single loop context (N+1 query pattern).
 
 <p align="right"><a href="#table-of-contents">▲ Back to top</a></p>
 
@@ -309,7 +309,7 @@ Logging bawaan database (seperti database profiler) hanya mencatat daftar kueri 
 
 ## Contributing & Issues
 
-Kami sangat menyambut kontribusi dalam bentuk laporan bug, saran fitur baru, atau pull request. Silakan laporkan masalah Anda melalui halaman [GitHub Issues](https://github.com/Fizm00/Mongoosleuth/issues).
+We welcome contributions in the form of bug reports, feature suggestions, or pull requests. Please report any issues you encounter via the [GitHub Issues](https://github.com/Fizm00/Mongoosleuth/issues) page.
 
 <p align="right"><a href="#table-of-contents">▲ Back to top</a></p>
 
