@@ -1,6 +1,6 @@
 {
   "name": "mongoosleuth",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "N+1 query pattern detector for Mongoose",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",

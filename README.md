@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/banner.svg" width="100%" alt="Mongoosleuth Banner"/>
+<img src="https://raw.githubusercontent.com/Fizm00/Mongoosleuth/main/assets/banner.svg" width="100%" alt="Mongoosleuth Banner"/>
 
 <a href="https://git.io/typing-svg">
   <img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&size=18&pause=1500&color=0F766E&center=true&vCenter=true&width=600&lines=Zero%20runtime%20dependencies.%20Just%20a%20peerDependency.;Catches%20the%20N%2B1%20queries%20Bullet%20catches%20in%20Rails.;Built%20for%20Mongoose.%20Built%20for%20TypeScript." alt="Typing SVG"/>
@@ -13,7 +13,7 @@
 <img src="https://img.shields.io/badge/TypeScript-Ready-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript ready"/>
 <img src="https://img.shields.io/badge/module-ESM%20%2B%20CJS-134E4A?style=for-the-badge" alt="ESM and CJS"/>
 <img src="https://img.shields.io/badge/Node.js-%3E%3D18-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js >=18"/>
-<img src="https://img.shields.io/npm/l/mongoosleuth?style=for-the-badge&color=134E4A" alt="license"/>
+<img src="https://img.shields.io/github/license/Fizm00/Mongoosleuth?style=for-the-badge&color=134E4A" alt="license"/>
 <br/>
 <img src="https://img.shields.io/github/stars/Fizm00/Mongoosleuth?style=for-the-badge&color=0F766E" alt="GitHub stars"/>
 <img src="https://img.shields.io/github/issues/Fizm00/Mongoosleuth?style=for-the-badge&color=134E4A" alt="GitHub issues"/>
@@ -331,5 +331,5 @@ We welcome contributions in the form of bug reports, feature suggestions, or pul
 MIT
 
 <div align="center">
-<img src="assets/footer.svg" width="100%" alt="Mongoosleuth Footer"/>
+<img src="https://raw.githubusercontent.com/Fizm00/Mongoosleuth/main/assets/footer.svg" width="100%" alt="Mongoosleuth Footer"/>
 </div>
