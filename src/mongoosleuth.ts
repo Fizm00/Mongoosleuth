@@ -1,4 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { MongoosleuthOptions } from './types';
+import { ConsoleReporter } from './reporters/console';
+import { runInScope, getRawStore } from './scope';
+import { attachInterceptor } from './interceptor';
+import { analyzeRecords } from './analyzer';
 
 /**
  * The main Mongoosleuth library class.
@@ -7,23 +12,34 @@ import { MongoosleuthOptions } from './types';
  * See AGENTS.md: Public API surface.
  */
 export class Mongoosleuth {
-  private options: MongoosleuthOptions;
+  public readonly options: Required<MongoosleuthOptions>;
 
   /**
    * Initializes a new instance of Mongoosleuth.
    * @param options Configuration options.
    */
   constructor(options?: MongoosleuthOptions) {
+    const enabled =
+      options?.enabled !== undefined ? options.enabled : process.env.NODE_ENV !== 'production';
+    const threshold = options?.threshold !== undefined ? options.threshold : 3;
+    const captureStackTrace =
+      options?.captureStackTrace !== undefined ? options.captureStackTrace : true;
+    const ignore = options?.ignore || [];
+    const reporters = options?.reporters || [new ConsoleReporter()];
+
+    if (options?.threshold !== undefined && options.threshold < 1) {
+      throw new Error(
+        `[mongoosleuth] Invalid threshold value: ${options.threshold}. Threshold must be >= 1.`
+      );
+    }
+
     this.options = {
-      enabled: process.env.NODE_ENV !== 'production',
-      threshold: 3,
-      captureStackTrace: true,
-      ignore: [],
-      reporters: [],
-      ...options,
+      enabled,
+      threshold,
+      captureStackTrace,
+      ignore,
+      reporters,
     };
-    // TODO: Set up defaults and initial state.
-    void this.options;
   }
 
   /**
@@ -31,11 +47,22 @@ export class Mongoosleuth {
    *
    * @param mongooseInstance Mongoose library instance to attach to.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public attach(mongooseInstance: any): void {
-    // TODO: Invoke the query interceptor patching.
-    // See AGENTS.md: QueryInterceptor & Public API surface.
-    void mongooseInstance;
+    attachInterceptor(mongooseInstance, this.options);
+  }
+
+  /**
+   * Internal helper to run query pattern analysis and trigger reporters.
+   */
+  private analyzeAndReport(records: any[] | undefined): void {
+    const findings = analyzeRecords(records, {
+      threshold: this.options.threshold,
+    });
+    if (findings.length > 0) {
+      for (const reporter of this.options.reporters) {
+        reporter.report(findings);
+      }
+    }
   }
 
   /**
@@ -44,16 +71,21 @@ export class Mongoosleuth {
    *
    * @returns Request middleware function.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public middleware(): (req: any, res: any, next: any) => void {
-    // TODO: Implement request middleware returning a function that scopes
-    // the request, monitors res.on('finish'), runs the PatternAnalyzer,
-    // and reports findings to the configured reporters.
-    // See AGENTS.md for details.
-    return (req, res, next) => {
-      void req;
-      void res;
-      next();
+  public middleware(): (req: any, res: any, next: (err?: any) => void) => void {
+    return (req: any, res: any, next: (err?: any) => void) => {
+      if (!this.options.enabled) {
+        next();
+        return;
+      }
+
+      runInScope(async () => {
+        const store = getRawStore();
+        res.on('finish', () => {
+          const records = store ? Array.from(store.values()) : [];
+          this.analyzeAndReport(records);
+        });
+        next();
+      });
     };
   }
 
@@ -63,9 +95,23 @@ export class Mongoosleuth {
    *
    * @param fn The asynchronous function to execute within the scope.
    */
-  public run<T>(fn: () => Promise<T>): Promise<T> {
-    // TODO: Open a scope and run the function, executing analysis upon resolution.
-    // See AGENTS.md for details.
-    return fn();
+  public async run<T>(fn: () => Promise<T>): Promise<T> {
+    if (!this.options.enabled) {
+      return fn();
+    }
+
+    let records: any[] | undefined;
+    try {
+      return await runInScope(async () => {
+        const store = getRawStore();
+        try {
+          return await fn();
+        } finally {
+          records = store ? Array.from(store.values()) : [];
+        }
+      });
+    } finally {
+      this.analyzeAndReport(records);
+    }
   }
 }

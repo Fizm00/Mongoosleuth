@@ -71,3 +71,13 @@ export function getActiveRecords(): QueryRecord[] | undefined {
   }
   return Array.from(store.values());
 }
+
+/**
+ * Returns the raw Map store of the active scope.
+ * Internal utility to capture the store reference across asynchronous boundaries.
+ *
+ * @returns The active Map store or undefined.
+ */
+export function getRawStore(): Map<string, QueryRecord> | undefined {
+  return storage.getStore();
+}
