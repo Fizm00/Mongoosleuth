@@ -14,6 +14,10 @@
 <img src="https://img.shields.io/badge/module-ESM%20%2B%20CJS-134E4A?style=for-the-badge" alt="ESM and CJS"/>
 <img src="https://img.shields.io/badge/Node.js-%3E%3D18-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js >=18"/>
 <img src="https://img.shields.io/npm/l/mongoosleuth?style=for-the-badge&color=134E4A" alt="license"/>
+<br/>
+<img src="https://img.shields.io/github/stars/Fizm00/Mongoosleuth?style=for-the-badge&color=0F766E" alt="GitHub stars"/>
+<img src="https://img.shields.io/github/issues/Fizm00/Mongoosleuth?style=for-the-badge&color=134E4A" alt="GitHub issues"/>
+<img src="https://img.shields.io/github/last-commit/Fizm00/Mongoosleuth?style=for-the-badge&color=134E4A" alt="GitHub last commit"/>
 
 <p><strong>A zero-runtime-dependency Node.js + TypeScript library that catches N+1 query
 patterns in Mongoose applications before they reach production.</strong></p>
@@ -28,11 +32,20 @@ patterns in Mongoose applications before they reach production.</strong></p>
 - [The problem](#the-problem)
 - [What Mongoosleuth does about it](#what-mongoosleuth-does-about-it)
 - [Installation](#installation)
+- [Compatibility & Requirements](#compatibility--requirements)
 - [Usage](#usage)
+  - [Express / Fastify / Koa middleware](#express--fastify--koa-middleware)
+  - [Manual scope (background jobs, scripts, anything without HTTP)](#manual-scope-background-jobs-scripts-anything-without-http)
+  - [Ignore options](#ignore-options)
+  - [Pluggable Custom Reporters](#pluggable-custom-reporters)
+- [Configuration Reference](#configuration-reference)
 - [How it works](#how-it-works)
 - [Technical details: the fingerprinting system](#technical-details-the-fingerprinting-system)
+- [FAQ](#faq)
 - [Development scripts](#development-scripts)
 - [Non-negotiable principles](#non-negotiable-principles)
+- [Contributing & Issues](#contributing--issues)
+- [Star History](#star-history)
 - [Roadmap](#roadmap)
 - [License](#license)
 
@@ -59,6 +72,8 @@ well-known solution for over a decade: the `Bullet` gem watches your queries
 in development and tells you exactly where you went wrong. Mongoose has never
 had an equivalent. Mongoosleuth is that equivalent.
 
+<p align="right"><a href="#table-of-contents">▲ Back to top</a></p>
+
 ## What Mongoosleuth does about it
 
 It watches the same code, says nothing while everything is fine, and the
@@ -76,6 +91,8 @@ allows in a single request, it tells you exactly where to look:
 No raw values are ever logged — only field names and value _types_ — so this
 is safe to leave running against a database full of real, sensitive, user data.
 
+<p align="right"><a href="#table-of-contents">▲ Back to top</a></p>
+
 ## Installation
 
 ```bash
@@ -84,6 +101,16 @@ npm install mongoosleuth
 
 `mongoose` is a peer dependency, not a regular dependency — make sure it is
 already installed in your project.
+
+<p align="right"><a href="#table-of-contents">▲ Back to top</a></p>
+
+## Compatibility & Requirements
+
+- **Node.js**: `>= 18.0.0`
+- **Mongoose**: `^7.0.0 || ^8.0.0`
+- **Zero runtime dependencies**: Will not clutter your `node_modules` or increase bundle sizes.
+
+<p align="right"><a href="#table-of-contents">▲ Back to top</a></p>
 
 ## Usage
 
@@ -119,6 +146,71 @@ await sleuth.run(async () => {
 });
 ```
 
+### Ignore options
+
+You can exclude specific collections or operations from N+1 analysis to avoid tracking logs on expected bulk operations:
+
+```typescript
+const sleuth = new Mongoosleuth({
+  ignore: [
+    { model: 'AuditLog' },                      // Ignore all queries on AuditLog collection
+    { operation: 'updateOne' },                 // Ignore all updates on any collection
+    { model: 'Session', operation: 'findOne' }   // Ignore specific collection-operation pair
+  ]
+});
+```
+
+### Pluggable Custom Reporters
+
+Mongoosleuth comes built-in with `ConsoleReporter` (default) and `JsonReporter` (for NDJSON logging pipelines). You can also easily implement the `Reporter` interface to ship warnings to Slack, Sentry, or S3:
+
+```typescript
+import { Mongoosleuth, JsonReporter, Reporter, Finding } from 'mongoosleuth';
+
+class SlackReporter implements Reporter {
+  report(findings: Finding[]): void {
+    for (const finding of findings) {
+      // Post warning to Slack hook
+      fetch('https://hooks.slack.com/services/...', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: `🚨 N+1 Query detected on *${finding.model}* (${finding.count} calls) at ${finding.callSite}`
+        })
+      });
+    }
+  }
+}
+
+const sleuth = new Mongoosleuth({
+  reporters: [
+    new SlackReporter(),
+    new JsonReporter(line => process.stderr.write(line + '\n'))
+  ]
+});
+```
+
+<p align="right"><a href="#table-of-contents">▲ Back to top</a></p>
+
+## Configuration Reference
+
+<details>
+<summary><strong>View Configuration Options (MongoosleuthOptions)</strong></summary>
+
+<br/>
+
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `enabled` | `boolean` | `process.env.NODE_ENV !== 'production'` | Toggle Mongoosleuth N+1 pattern detection. When set to `false`, it acts as a zero-overhead pass-through. |
+| `threshold` | `number` | `3` | Number of identical query shapes executed from the same call site within a single scope before triggering a warning. Must be `>= 1`. |
+| `captureStackTrace` | `boolean` | `true` | When `true`, automatically identifies the exact file and line number (call site) of queries. Set to `false` for absolute zero-overhead performance (logs will group call sites as `'unknown'`). |
+| `ignore` | `Array<{ model?: string; operation?: string }>` | `[]` | Excludes queries matching specific model names or operations from being tracked. |
+| `reporters` | `Reporter[]` | `[new ConsoleReporter()]` | Pluggable output handlers that receive identified N+1 query findings. |
+
+</details>
+
+<p align="right"><a href="#table-of-contents">▲ Back to top</a></p>
+
 ## How it works
 
 ```mermaid
@@ -134,6 +226,8 @@ that scope is fingerprinted and logged. When the request finishes, the
 analyzer checks whether any fingerprint repeated, from the same line of code,
 often enough to be a loop rather than a coincidence — and if so, the reporter
 prints it.
+
+<p align="right"><a href="#table-of-contents">▲ Back to top</a></p>
 
 ## Technical details: the fingerprinting system
 
@@ -171,6 +265,21 @@ code never affects detection:
 
 Same fingerprint either way — which is exactly the point.
 
+<p align="right"><a href="#table-of-contents">▲ Back to top</a></p>
+
+## FAQ
+
+#### Apakah aman dipasang di production?
+Ya, sangat aman. Saat `enabled` diatur ke `false` (default di lingkungan produksi), seluruh arsitektur hook Mongoosleuth di-bypass secara otomatis dan hanya berjalan sebagai fungsi kosong (*no-op pass-through*) dengan biaya komputasi yang tidak terasa (negligible overhead). Selain itu, Mongoosleuth tidak pernah menyimpan data sensitif (PII) dari kueri, sehingga aman terhadap privasi data.
+
+#### Apakah ini memengaruhi performa aplikasi saya?
+Di lingkungan pengembangan (`enabled: true`), proses penangkapan *stack trace* untuk melacak baris kode (`callSite`) memiliki sedikit biaya CPU. Jika Anda ingin melakukan pengujian performa tinggi (load testing) namun tetap ingin mencatat kueri N+1, Anda bisa mengatur `captureStackTrace: false` untuk menonaktifkan pelacakan baris kode dan mengelompokkan panggilan di bawah lokasi `'unknown'`.
+
+#### Mengapa tidak menggunakan logging kueri database bawaan saja?
+Logging bawaan database (seperti database profiler) hanya mencatat daftar kueri mentah yang masuk tanpa menyadari relasi antar-kueri tersebut. Mongoosleuth mengelompokkan kueri berdasarkan baris kode asal pemanggilnya di dalam request yang sama. Ini membuat Mongoosleuth dapat membedakan kueri repetitif akibat loop terpisah dengan kueri yang memang sengaja dieksekusi secara terpisah di baris kode berbeda.
+
+<p align="right"><a href="#table-of-contents">▲ Back to top</a></p>
+
 ## Development scripts
 
 | Command          | What it does                                                                |
@@ -179,6 +288,8 @@ Same fingerprint either way — which is exactly the point.
 | `npm test`       | Runs the unit and integration suite (Vitest + `mongodb-memory-server`)      |
 | `npm run lint`   | Checks code style and TypeScript linter compliance                          |
 | `npm run format` | Formats the codebase with Prettier                                          |
+
+<p align="right"><a href="#table-of-contents">▲ Back to top</a></p>
 
 ## Non-negotiable principles
 
@@ -194,12 +305,26 @@ Same fingerprint either way — which is exactly the point.
 > Dual module output. Full support for ESM and CommonJS consumers, with
 > accurate `.d.ts` definitions for both.
 
+<p align="right"><a href="#table-of-contents">▲ Back to top</a></p>
+
+## Contributing & Issues
+
+Kami sangat menyambut kontribusi dalam bentuk laporan bug, saran fitur baru, atau pull request. Silakan laporkan masalah Anda melalui halaman [GitHub Issues](https://github.com/Fizm00/Mongoosleuth/issues).
+
+<p align="right"><a href="#table-of-contents">▲ Back to top</a></p>
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Fizm00/Mongoosleuth&type=Date)](https://star-history.com/#Fizm00/Mongoosleuth&Date)
+
+<p align="right"><a href="#table-of-contents">▲ Back to top</a></p>
+
 ## Roadmap
 
 - **Unused eager loading detection** — flagging a `.populate()` call whose
   result was never actually read, the mirror image of the N+1 problem.
-- **Custom reporters** — first-class examples for shipping findings to
-  Slack, Sentry, or a structured log pipeline instead of the console.
+
+<p align="right"><a href="#table-of-contents">▲ Back to top</a></p>
 
 ## License
 
